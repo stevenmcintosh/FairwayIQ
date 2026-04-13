@@ -7,28 +7,11 @@
 
 # 🧠 SYSTEM OVERVIEW
 
-This project follows a **2-stage model**:
+This project supports **3 ways to start**:
 
-## Stage 1 — Project Approval (External)
-Completed via:
-- `NEW-PROJECT-CHECKLIST.md`
-
-Purpose:
-- Validate project is worth building
-- Confirm owner, scope, and stack direction
-- Ensure approval is granted
-
----
-
-## Stage 2 — Project Setup (This System)
-Managed via:
-- `SETUP-CHECKLIST.md`
-
-Purpose:
-- Configure project correctly
-- Enforce governance rules
-- Generate required files
-- Prepare for development
+1. `NEW-PROJECT-CHECKLIST.md` (structured start)
+2. `BLUEPRINT.md` (existing project brief)
+3. Direct input pasted into Claude
 
 ---
 
@@ -38,53 +21,77 @@ On EVERY session start:
 
 ---
 
-## Step 1 — Validate Project Readiness
+## Step 1 — Check for Blueprint
 
-Check:
+If `BLUEPRINT.md` exists:
 
-- Does `NEW-PROJECT-CHECKLIST.md` exist?
-- Is it completed?
+* Read it fully
+* Extract:
 
-### If NOT completed:
-
-Say:
-
-> "Before we start, this project must pass the New Project Checklist.
-> This ensures the project is valid, aligned, and approved.
->
-> Please complete `NEW-PROJECT-CHECKLIST.md` first."
-
-STOP.
-
----
-
-## Step 2 — Load Setup Checklist
-
-- Read `SETUP-CHECKLIST.md`
-- Count all items with `Status: PENDING`
-
----
-
-## Step 3 — Session Mode
-
-### FIRST SESSION (all PENDING)
-
-Say:
-
-> "This looks like a newly approved project — let's set it up properly.
->
-> Tell me everything you already know:
-> - project purpose
-> - users
-> - tools/services
-> - decisions already made
->
-> The more you share, the faster we complete setup."
+  * project purpose
+  * users
+  * scope
+  * stack
+  * integrations
 
 Then:
-- Extract answers
-- Update checklist immediately
-- Continue questioning
+
+* Populate `SETUP-CHECKLIST.md`
+* Fill any obvious values
+* Identify missing gaps
+
+Say:
+
+> "I’ve reviewed your BLUEPRINT.md and extracted key information.
+> Let’s fill in the remaining gaps to complete setup."
+
+---
+
+## Step 2 — If No Blueprint, Check Checklist
+
+If `NEW-PROJECT-CHECKLIST.md` is completed:
+
+* Continue setup
+
+---
+
+## Step 3 — If Neither Exists
+
+Ask:
+
+> "How would you like to start?
+>
+> 1. Complete the checklist
+> 2. Add a BLUEPRINT.md file
+> 3. Paste your project brief here
+>
+> I’ll use that to set up your project."
+
+STOP until input is provided.
+
+---
+
+## Step 4 — Load Setup Checklist
+
+* Read `SETUP-CHECKLIST.md`
+* Count PENDING items
+
+---
+
+## Step 5 — Session Mode
+
+### FIRST SESSION
+
+Say:
+
+> "Tell me everything you already know about this project.
+> I’ll use it to complete as much setup as possible."
+
+Then:
+
+* Parse input
+* Update checklist immediately
+* Continue questioning
 
 ---
 
@@ -98,23 +105,23 @@ Say:
 
 ### SETUP COMPLETE
 
-- Skip onboarding
-- Act as full project assistant
+* Skip setup
+* Act as full project assistant
 
 ---
 
 # 🧩 QUESTIONING STYLE
 
-- Ask in grouped themes (not one-by-one)
-- Accept partial answers
-- Allow skipping (mark SKIPPED)
-- Offer defaults:
-  - Next.js
-  - Vercel
-  - Supabase
-  - MUI
-- Explain why decisions matter (1 sentence max)
-- Do NOT block progress unnecessarily
+* Group related questions
+* Accept partial answers
+* Allow skipping (mark SKIPPED)
+* Ask only for missing gaps
+* Offer defaults:
+
+  * Next.js
+  * Vercel
+  * Supabase
+  * MUI
 
 ---
 
@@ -122,104 +129,107 @@ Say:
 
 ## Stack Standard
 
-Default stack:
+* Next.js
+* Vercel
+* Supabase
+* MUI
 
-- Frontend: Next.js
-- Hosting: Vercel
-- Database/Auth: Supabase
-- UI: MUI
+Deviations:
 
-Rules:
-- Deviations must be documented
-- Deviations require approval
+* Must be documented
+* Must be approved
 
 ---
 
 ## UI Standard
 
-- MUI is mandatory
-- No alternative UI frameworks without approval
-- Styling via MUI theming
+* MUI is mandatory
+* No alternative UI frameworks allowed
 
 ---
 
 ## Repository Rules
 
-All projects MUST:
-
-- Exist in company GitHub organisation
-- Follow naming convention:
-  - `ops-tool-xxx`
-  - `product-tool-xxx`
-  - `ai-tool-xxx`
+* Must be in company GitHub org
 
 ### Branch Structure
 
-- `dev`
-- `staging`
-- `main`
+* dev
+* staging
+* main
 
 ### Rules
 
-- No direct push to `main`
-- PR required for `staging`
-- PR required for `main`
+* No direct push to main
+* PR required for staging
+* PR required for main
 
 ---
 
-## Required Files (MANDATORY)
+## Required Files
 
-All projects MUST include:
-
-- `PROJECT.md`
-- `README.md`
-- `ARCHITECTURE.md`
-- `GOVERNANCE.md`
-- `DEPLOYMENT.md`
-- `DATA_MODEL.md`
-- `INTEGRATIONS.md`
-- `CHANGELOG.md`
-- `.env.example`
+* PROJECT.md
+* README.md
+* ARCHITECTURE.md
+* GOVERNANCE.md
+* DEPLOYMENT.md
+* DATA_MODEL.md
+* INTEGRATIONS.md
+* CHANGELOG.md
+* .env.example
 
 ---
 
 # 📄 TEMPLATE-AWARE FILE GENERATION
 
-## Location
-
 Templates are stored in:
+
+```text
 /templates/
-
-
-## README Generation
-
-When generating or updating `README.md`:
-
-### Rules
-
-* Use the existing README template as the base
-* Populate with project-specific details:
-
-  * Project name
-  * Description
-  * Stack (confirm or override defaults)
-  * Setup instructions
-  * Key commands
-* Keep it concise and developer-focused
-* Do NOT include business case or deep architecture detail
-* Ensure a new developer can run the project within 10 minutes
+```
 
 ---
 
-### Behaviour
+## Rules
 
-When setup completes:
+* Use templates exactly
+* Do not invent structure
+* Populate known data
+* Leave blanks if unknown
 
-1. Generate all governance files
-2. Update `README.md` with final project details
-3. Replace placeholders with real values
-4. Improve clarity where needed
-5. Keep structure consistent with template
+---
 
+## README Generation
 
+When updating `README.md`:
 
+* Use template structure
+* Populate real project details
+* Keep concise
+* Ensure project can be run in 10 minutes
+
+---
+
+# 📄 CHECKLIST MANAGEMENT
+
+* Update immediately on answers
+* PENDING → DONE
+* Allow SKIPPED with reason
+
+---
+
+# 🏁 WHEN SETUP COMPLETES
+
+Claude must:
+
+1. Generate all required files
+2. Populate them using templates
+3. Update README.md
+4. Highlight missing sections
+5. Offer next steps
+
+---
+
+# 🧠 FINAL PRINCIPLE
+
+**“Use what exists. Ask only what’s missing.”**
