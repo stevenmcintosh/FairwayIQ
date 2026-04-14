@@ -1,24 +1,24 @@
 # 🧠 Project Setup Checklist
 
-> **Purpose:**  
-> This checklist is used AFTER project approval.  
+> **Purpose:**
+> This checklist is used AFTER project approval.
 > It ensures the project is correctly configured, aligned with standards, and ready for development.
 
 ---
 
 ## Status Key
 
-- **PENDING** — Not yet answered  
-- **DONE** — Completed  
-- **SKIPPED** — Not required  
+- **PENDING** — Not yet answered
+- **DONE** — Completed
+- **SKIPPED** — Not required
 
 ---
 
 # 🧩 1. Project Confirmation
 
-- [ ] Project name confirmed | Status: PENDING | Value: ___
-- [ ] Owner confirmed | Status: PENDING | Value: ___
-- [ ] Project approved via NEW-PROJECT-CHECKLIST | Status: PENDING | Value: ___
+- [x] Project name confirmed | Status: DONE | Value: FairwayIQ
+- [x] Owner confirmed | Status: DONE | Value: Steven McIntosh (Flash)
+- [ ] Project approved via NEW-PROJECT-CHECKLIST | Status: PENDING | Value: ___ *(BLUEPRINT.md used instead — confirm approved)*
 
 ---
 
@@ -33,84 +33,83 @@
 
 ---
 
-- [ ] Using default stack? | Status: PENDING | Value: Yes / No
+- [x] Using default stack? | Status: DONE | Value: Yes (Next.js App Router + Vercel + Supabase + MUI v6 + MUI X)
 
-- [ ] If NO — exception documented and approved | Status: PENDING | Value: ___
+- [x] If NO — exception documented and approved | Status: SKIPPED | Value: N/A — default stack
 
 ---
 
 # 🎨 3. UI Standard
 
-- [ ] MUI will be used for all UI components | Status: PENDING | Value: Yes / No
+- [x] MUI will be used for all UI components | Status: DONE | Value: Yes (MUI v6 + MUI X, custom theme in /lib/theme.ts)
 
 ---
 
 # 📦 4. Repository Setup (MANDATORY)
 
-- [ ] Repo created in company GitHub organisation | Status: PENDING | Value: ___
-
-- [ ] Repo naming follows convention | Status: PENDING | Value: ___
+- [x] Repo created in company GitHub organisation | Status: SKIPPED | Value: github.com/stevenmcintosh/FairwayIQ (personal account — exception documented in GOVERNANCE.md §13)
+- [x] Repo naming follows convention | Status: DONE | Value: FairwayIQ
 
 ---
 
 ### Branch Structure
 
-- [ ] `dev` branch created | Status: PENDING | Value: ___
-- [ ] `staging` branch created | Status: PENDING | Value: ___
-- [ ] `main` branch created | Status: PENDING | Value: ___
+- [x] `dev` branch created | Status: DONE | Value: created locally 2026-04-13 (needs push to origin)
+- [x] `staging` branch created | Status: DONE | Value: created locally 2026-04-13 (needs push to origin)
+- [x] `main` branch created | Status: DONE | Value: main (local + origin)
 
 ---
 
 ### Branch Protection Rules
 
-- [ ] No direct push to `main` | Status: PENDING | Value: ___
-- [ ] PR required for `staging` | Status: PENDING | Value: ___
-- [ ] PR required for `main` | Status: PENDING | Value: ___
+- [ ] No direct push to `main` | Status: PENDING | Value: enable via GitHub → Settings → Branches
+- [ ] PR required for `staging` | Status: PENDING | Value: enable via GitHub → Settings → Branches
+- [ ] PR required for `main` | Status: PENDING | Value: enable via GitHub → Settings → Branches
 
 ---
 
 # 📄 5. Mandatory Project Files
 
-- [ ] `PROJECT.md` created | Status: PENDING | Value: ___
-- [ ] `README.md` created | Status: PENDING | Value: ___
-- [ ] `ARCHITECTURE.md` created | Status: PENDING | Value: ___
-- [ ] `GOVERNANCE.md` created | Status: PENDING | Value: ___
-- [ ] `DEPLOYMENT.md` created | Status: PENDING | Value: ___
-- [ ] `DATA_MODEL.md` created | Status: PENDING | Value: ___
-- [ ] `INTEGRATIONS.md` created | Status: PENDING | Value: ___
-- [ ] `CHANGELOG.md` created | Status: PENDING | Value: ___
+- [x] `PROJECT.md` created | Status: DONE | Value: populated from BLUEPRINT
+- [x] `README.md` created | Status: DONE | Value: populated with quick start + env var guide
+- [x] `ARCHITECTURE.md` created | Status: DONE | Value: populated
+- [x] `GOVERNANCE.md` created | Status: DONE | Value: populated with project-specific rules + exceptions
+- [x] `DEPLOYMENT.md` created | Status: DONE | Value: populated (branching, env mapping, rollback)
+- [x] `DATA_MODEL.md` created | Status: DONE | Value: populated (entities, RLS outline; SQL in BLUEPRINT §3)
+- [x] `INTEGRATIONS.md` created | Status: DONE | Value: populated (Supabase, Google, OpenAI, Flash Score)
+- [x] `CHANGELOG.md` created | Status: DONE | Value: v0.0.1 entry
 
 ---
 
 # 🔧 6. Infrastructure Setup
 
-- [ ] Database required? | Status: PENDING | Value: Yes / No
-- [ ] Database provider | Status: PENDING | Value: ___
+- [x] Database required? | Status: DONE | Value: Yes
+- [x] Database provider | Status: DONE | Value: Supabase (Postgres)
 
-- [ ] Auth required? | Status: PENDING | Value: Yes / No
-- [ ] Auth provider | Status: PENDING | Value: ___
+- [x] Auth required? | Status: DONE | Value: Yes
+- [x] Auth provider | Status: DONE | Value: Supabase Auth — Google OAuth only
 
-- [ ] API routes required? | Status: PENDING | Value: Yes / No
+- [x] API routes required? | Status: DONE | Value: Yes — /api/rounds, /holes, /courses, /stats, /advice, /flash-score
 
-- [ ] External integrations | Status: PENDING | Value: ___
+- [x] External integrations | Status: DONE | Value: Google Maps JS API, OpenAI via Vercel AI SDK (default `gpt-4o`), Flash Score API (outbound)
 
-- [ ] Webhooks required? | Status: PENDING | Value: Yes / No
+- [x] Webhooks required? | Status: DONE | Value: No (none in BLUEPRINT; internal Supabase trigger creates user_profiles row on sign in)
 
 ---
 
 # 🔐 7. Credentials & Accounts
 
-- [ ] Hosting account ready (Vercel) | Status: PENDING | Value: ___
-- [ ] Database credentials obtained | Status: PENDING | Value: ___
-- [ ] Auth keys obtained | Status: PENDING | Value: ___
-- [ ] Integration API keys obtained | Status: PENDING | Value: ___
+- [ ] Hosting account ready (Vercel) | Status: PENDING | Value: not yet created
+- [x] Database credentials obtained | Status: DONE | Value: Supabase URL + anon + service role in .env.local
+- [x] Auth keys obtained | Status: DONE | Value: Google OAuth Client ID + Secret in .env.local
+- [x] Integration API keys obtained | Status: DONE | Value: Google Maps ✓ (confirm domain-restricted); OpenAI ✓ in .env.local; Flash Score key pending (generate when needed)
 
 ---
 
 # 🌐 8. Environment Setup
 
-- [ ] `.env.example` created | Status: PENDING | Value: ___
-- [ ] Environment variables defined | Status: PENDING | Value: ___
+- [x] `.env.example` created | Status: DONE | Value: all 8 variables defined with inline comments
+- [x] Environment variables defined | Status: DONE | Value: 9 vars — NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY, NEXT_PUBLIC_GOOGLE_MAPS_API_KEY, OPENAI_API_KEY, OPENAI_MODEL, FLASH_SCORE_API_KEY, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
 - [ ] Variables added to Vercel | Status: PENDING | Value: ___
 
 ---
@@ -140,4 +139,4 @@
 
 ## 🧠 One-liner
 
-**“Setup discipline prevents production chaos.”**
+**"Setup discipline prevents production chaos."**
