@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import Box from "@mui/material/Box";
 import Container from "@mui/material/Container";
@@ -14,6 +15,14 @@ export default async function HomePage() {
     redirect("/login");
   }
 
+  const { data: activeRound } = await supabase
+    .from("rounds")
+    .select("id")
+    .eq("status", "active")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
   return (
     <Box sx={{ minHeight: "100dvh", display: "flex", alignItems: "center" }}>
       <Container maxWidth="sm">
@@ -22,14 +31,20 @@ export default async function HomePage() {
             FairwayIQ
           </Typography>
           <Typography variant="body1" sx={{ color: "text.secondary" }}>
-            Welcome back, {data.user.email}. Phase 1 scaffold in place — round logging coming next.
+            Welcome back, {data.user.email}.
           </Typography>
           <Stack direction="row" spacing={2}>
-            <Button variant="contained" size="large" disabled>
-              Start a Round
-            </Button>
-            <Button variant="outlined" size="large" disabled>
-              View Stats
+            {activeRound ? (
+              <Button variant="contained" size="large" component={Link} href={`/round/${activeRound.id}`}>
+                Resume Round
+              </Button>
+            ) : (
+              <Button variant="contained" size="large" component={Link} href="/setup">
+                Start a Round
+              </Button>
+            )}
+            <Button variant="outlined" size="large" component={Link} href="/rounds">
+              View Rounds
             </Button>
           </Stack>
         </Stack>
