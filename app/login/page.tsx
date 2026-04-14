@@ -21,11 +21,11 @@ export default function LoginPage() {
   return (
     <Box sx={{ minHeight: "100dvh", display: "flex", alignItems: "center" }}>
       <Container maxWidth="xs">
-        <Stack spacing={4} alignItems="center" textAlign="center">
-          <Typography variant="h3" component="h1" fontWeight={700}>
+        <Stack spacing={4} sx={{ alignItems: "center", textAlign: "center" }}>
+          <Typography variant="h3" component="h1" sx={{ fontWeight: 700 }}>
             FairwayIQ
           </Typography>
-          <Typography variant="body1" color="text.secondary">
+          <Typography variant="body1" sx={{ color: "text.secondary" }}>
             Sign in to log rounds, track stats, and get AI caddy advice.
           </Typography>
           <Button

@@ -18,10 +18,10 @@ export default async function HomePage() {
     <Box sx={{ minHeight: "100dvh", display: "flex", alignItems: "center" }}>
       <Container maxWidth="sm">
         <Stack spacing={3}>
-          <Typography variant="h3" component="h1" fontWeight={700}>
+          <Typography variant="h3" component="h1" sx={{ fontWeight: 700 }}>
             FairwayIQ
           </Typography>
-          <Typography variant="body1" color="text.secondary">
+          <Typography variant="body1" sx={{ color: "text.secondary" }}>
             Welcome back, {data.user.email}. Phase 1 scaffold in place — round logging coming next.
           </Typography>
           <Stack direction="row" spacing={2}>
