@@ -1,35 +1,35 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
-import Card from "@mui/material/Card";
-import CardContent from "@mui/material/CardContent";
-import Chip from "@mui/material/Chip";
-import Divider from "@mui/material/Divider";
 import Alert from "@mui/material/Alert";
+import Box from "@mui/material/Box";
 import { useActiveRound, type ActiveRoundInit } from "@/lib/useActiveRound";
 import HoleLogger from "./HoleLogger";
 import SkipHoleDialog from "@/components/round/SkipHoleDialog";
 import PickUpDialog from "@/components/round/PickUpDialog";
 import RoundSummary from "./RoundSummary";
-
-type Mode = "preview" | "logging" | "summary";
+import type { HoleScore } from "@/types";
 
 export default function RoundClient({ init }: { init: ActiveRoundInit }) {
-  const router = useRouter();
   const ar = useActiveRound(init);
-  const [mode, setMode] = useState<Mode>(
-    init.round.status === "complete" ? "summary" : "preview",
-  );
+  const [summaryOpen, setSummaryOpen] = useState(init.round.status === "complete");
   const [skipOpen, setSkipOpen] = useState(false);
   const [pickUpOpen, setPickUpOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  if (mode === "summary" || ar.round.status === "complete") {
-    return <RoundSummary round={ar.round} holes={ar.playedHoles} scores={ar.scores} parForTee={ar.parForRoundTee} />;
+  if (summaryOpen || ar.round.status === "complete") {
+    return (
+      <RoundSummary
+        round={ar.round}
+        holes={ar.playedHoles}
+        scores={ar.scores}
+        parForTee={ar.parForRoundTee}
+      />
+    );
   }
 
   const hole = ar.currentHole;
@@ -38,30 +38,45 @@ export default function RoundClient({ init }: { init: ActiveRoundInit }) {
   }
 
   const par = ar.parForRoundTee(hole);
-  const yardage =
-    ar.round.tee_colour === "white"
-      ? hole.yardage_white
-      : ar.round.tee_colour === "yellow"
-        ? hole.yardage_yellow
-        : hole.yardage_red;
-
   const existingScore = ar.scoreForHole(hole.hole_number);
   const holeIndex = ar.currentIndex + 1;
   const holesTotal = ar.playedHoles.length;
+  const isFirstHole = ar.currentIndex === 0;
   const isLastHole = ar.currentIndex === holesTotal - 1;
 
-  async function handleSaved() {
-    setError(null);
+  function goNext() {
     if (isLastHole) {
-      try {
-        await ar.completeRound();
-        setMode("summary");
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "Failed to complete round");
-      }
+      void finishRound();
     } else {
       ar.goToNext();
-      setMode("preview");
+    }
+  }
+
+  function goPrev() {
+    if (isFirstHole) {
+      ar.jumpTo(ar.playedHoles[holesTotal - 1].hole_number);
+    } else {
+      ar.goToPrev();
+    }
+  }
+
+  async function finishRound() {
+    setError(null);
+    try {
+      await ar.completeRound();
+      setSummaryOpen(true);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to complete round");
+    }
+  }
+
+  async function handleSavedAndNext(payload: Omit<HoleScore, "id" | "created_at">) {
+    setError(null);
+    try {
+      await ar.upsertScore(payload);
+      goNext();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to save hole");
     }
   }
 
@@ -83,7 +98,7 @@ export default function RoundClient({ init }: { init: ActiveRoundInit }) {
         notes: reason,
       });
       setSkipOpen(false);
-      await handleSaved();
+      goNext();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to skip hole");
     }
@@ -107,99 +122,91 @@ export default function RoundClient({ init }: { init: ActiveRoundInit }) {
         notes: reason,
       });
       setPickUpOpen(false);
-      await handleSaved();
+      goNext();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to pick up");
     }
   }
 
   return (
-    <Stack spacing={3}>
-      <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "center" }}>
-        <Button size="small" onClick={() => router.push("/")}>
+    <Stack spacing={2.5}>
+      <Stack
+        direction="row"
+        sx={{ justifyContent: "space-between", alignItems: "center", px: 0.5 }}
+      >
+        <Button
+          component={Link}
+          href="/"
+          size="small"
+          sx={{
+            minHeight: 36,
+            px: 1.5,
+            color: "primary.main",
+            fontFamily: "var(--font-jakarta)",
+            fontWeight: 700,
+            letterSpacing: "0.08em",
+            textTransform: "uppercase",
+            fontSize: "0.72rem",
+          }}
+        >
           ← Home
         </Button>
-        <Typography variant="body2" sx={{ color: "text.secondary" }}>
-          Hole {holeIndex} of {holesTotal}
-        </Typography>
+        <Box
+          sx={{
+            px: 1.75,
+            py: 0.75,
+            borderRadius: 999,
+            background: "linear-gradient(180deg, #0E4A38, #072418)",
+            color: "#FAF7F0",
+            fontFamily: "var(--font-mono)",
+            fontSize: "0.74rem",
+            fontWeight: 700,
+            letterSpacing: "0.1em",
+            textTransform: "uppercase",
+            boxShadow: "0 4px 14px -8px rgba(7,36,24,0.6)",
+          }}
+        >
+          Hole {holeIndex.toString().padStart(2, "0")} / {holesTotal}
+        </Box>
       </Stack>
 
-      {mode === "preview" && (
-        <Card>
-          <CardContent>
-            <Stack spacing={2}>
-              <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "baseline" }}>
-                <Typography variant="overline" sx={{ color: "text.secondary" }}>
-                  Hole {hole.hole_number}
-                </Typography>
-                <Chip size="small" label={`SI ${hole.stroke_index}`} />
-              </Stack>
-              <Typography variant="h4" component="h1" sx={{ fontWeight: 700 }}>
-                {hole.name ?? `Hole ${hole.hole_number}`}
-              </Typography>
-              <Stack direction="row" spacing={3}>
-                <Stack>
-                  <Typography variant="caption" sx={{ color: "text.secondary" }}>
-                    Par
-                  </Typography>
-                  <Typography variant="h5" sx={{ fontWeight: 700 }}>
-                    {par}
-                  </Typography>
-                </Stack>
-                <Stack>
-                  <Typography variant="caption" sx={{ color: "text.secondary" }}>
-                    Yardage ({ar.round.tee_colour})
-                  </Typography>
-                  <Typography variant="h5" sx={{ fontWeight: 700 }}>
-                    {yardage ?? "—"}
-                  </Typography>
-                </Stack>
-              </Stack>
-              <Divider />
-              <Stack direction="row" spacing={2}>
-                <Button
-                  fullWidth
-                  variant="contained"
-                  size="large"
-                  onClick={() => setMode("logging")}
-                >
-                  Start Hole
-                </Button>
-                <Button
-                  fullWidth
-                  variant="outlined"
-                  size="large"
-                  onClick={() => setSkipOpen(true)}
-                >
-                  Skip
-                </Button>
-              </Stack>
-              {ar.currentIndex > 0 && (
-                <Button size="small" onClick={ar.goToPrev}>
-                  ← Previous hole
-                </Button>
-              )}
-            </Stack>
-          </CardContent>
-        </Card>
-      )}
-
-      {mode === "logging" && (
-        <HoleLogger
-          hole={hole}
-          par={par}
-          existing={existingScore}
-          roundId={ar.round.id}
-          onCancel={() => setMode("preview")}
-          onPickUp={() => setPickUpOpen(true)}
-          onSaved={async (payload) => {
-            await ar.upsertScore(payload);
-            await handleSaved();
-          }}
-        />
-      )}
+      <HoleLogger
+        key={hole.id}
+        hole={hole}
+        par={par}
+        teeColour={ar.round.tee_colour}
+        existing={existingScore}
+        roundId={ar.round.id}
+        isFirstHole={isFirstHole}
+        isLastHole={isLastHole}
+        onPrev={goPrev}
+        onSkip={() => setSkipOpen(true)}
+        onPickUp={() => setPickUpOpen(true)}
+        onSavedAndNext={handleSavedAndNext}
+      />
 
       {error && <Alert severity="error">{error}</Alert>}
+
+      <Stack
+        direction="row"
+        spacing={2}
+        sx={{ justifyContent: "center", pt: 0.5 }}
+      >
+        <Typography
+          variant="caption"
+          onClick={() => setSummaryOpen(true)}
+          sx={{
+            cursor: "pointer",
+            color: "text.secondary",
+            fontWeight: 600,
+            letterSpacing: "0.08em",
+            textTransform: "uppercase",
+            "&:hover": { color: "primary.main" },
+          }}
+        >
+          View scorecard
+        </Typography>
+      </Stack>
 
       <SkipHoleDialog
         open={skipOpen}
