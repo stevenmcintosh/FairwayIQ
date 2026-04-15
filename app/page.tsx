@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import Box from "@mui/material/Box";
-import Container from "@mui/material/Container";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
+import Card from "@mui/material/Card";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export default async function HomePage() {
@@ -24,31 +24,82 @@ export default async function HomePage() {
     .maybeSingle();
 
   return (
-    <Box sx={{ minHeight: "100dvh", display: "flex", alignItems: "center" }}>
-      <Container maxWidth="sm">
-        <Stack spacing={3}>
-          <Typography variant="h3" component="h1" sx={{ fontWeight: 700 }}>
-            FairwayIQ
-          </Typography>
-          <Typography variant="body1" sx={{ color: "text.secondary" }}>
-            Welcome back, {data.user.email}.
-          </Typography>
-          <Stack direction="row" spacing={2}>
-            {activeRound ? (
-              <Button variant="contained" size="large" component={Link} href={`/round/${activeRound.id}`}>
-                Resume Round
+    <Box sx={{ minHeight: "100dvh" }}>
+      <Box sx={{ px: 2, pt: 3 }}>
+        <Typography
+          component="span"
+          sx={{
+            display: "block",
+            fontSize: "0.8125rem",
+            fontWeight: 500,
+            color: "rgba(60,60,67,0.60)",
+            mb: 0.5,
+          }}
+        >
+          {data.user.email}
+        </Typography>
+        <Typography
+          component="h1"
+          sx={{
+            fontSize: "2.125rem",
+            fontWeight: 700,
+            letterSpacing: "-0.022em",
+            lineHeight: 1.12,
+            color: "#000",
+          }}
+        >
+          FairwayIQ
+        </Typography>
+      </Box>
+
+      <Box sx={{ px: 2, pt: 3 }}>
+        <Card>
+          <Box sx={{ p: 2.5 }}>
+            <Typography
+              component="span"
+              sx={{
+                display: "block",
+                fontSize: "0.8125rem",
+                fontWeight: 600,
+                color: "rgba(60,60,67,0.60)",
+                textTransform: "uppercase",
+                mb: 0.5,
+              }}
+            >
+              {activeRound ? "In progress" : "Ready to play"}
+            </Typography>
+            <Typography
+              component="span"
+              sx={{
+                display: "block",
+                fontSize: "1.375rem",
+                fontWeight: 700,
+                letterSpacing: "-0.018em",
+                color: "#000",
+                mb: 2,
+              }}
+            >
+              {activeRound ? "Resume your round" : "Start a new round"}
+            </Typography>
+            <Link
+              href={activeRound ? `/round/${activeRound.id}` : "/setup"}
+              style={{ textDecoration: "none" }}
+            >
+              <Button fullWidth variant="contained" size="large">
+                {activeRound ? "Resume Round" : "Start a Round"}
               </Button>
-            ) : (
-              <Button variant="contained" size="large" component={Link} href="/setup">
-                Start a Round
-              </Button>
-            )}
-            <Button variant="outlined" size="large" component={Link} href="/rounds">
-              View Rounds
-            </Button>
-          </Stack>
-        </Stack>
-      </Container>
+            </Link>
+          </Box>
+        </Card>
+      </Box>
+
+      <Box sx={{ px: 2, pt: 2 }}>
+        <Link href="/rounds" style={{ textDecoration: "none" }}>
+          <Button fullWidth variant="outlined" size="large">
+            View Round History
+          </Button>
+        </Link>
+      </Box>
     </Box>
   );
 }

@@ -1,20 +1,25 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
-import Stack from "@mui/material/Stack";
-import Typography from "@mui/material/Typography";
-import Button from "@mui/material/Button";
 import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
+import { APIProvider } from "@vis.gl/react-google-maps";
 import { useActiveRound, type ActiveRoundInit } from "@/lib/useActiveRound";
-import HoleLogger from "./HoleLogger";
+import HoleMapView from "./HoleMapView";
 import SkipHoleDialog from "@/components/round/SkipHoleDialog";
 import PickUpDialog from "@/components/round/PickUpDialog";
 import RoundSummary from "./RoundSummary";
-import type { HoleScore } from "@/types";
+import type { HoleScore, TeeColour } from "@/types";
+import type { HoleInsightMap } from "@/lib/holeInsights";
+import type { HoleLoggerSnapshot } from "./HoleLoggerBody";
 
-export default function RoundClient({ init }: { init: ActiveRoundInit }) {
+type Props = {
+  init: ActiveRoundInit;
+  insights: HoleInsightMap;
+  mapsApiKey: string | null;
+};
+
+export default function RoundClient({ init, insights, mapsApiKey }: Props) {
   const ar = useActiveRound(init);
   const [summaryOpen, setSummaryOpen] = useState(init.round.status === "complete");
   const [skipOpen, setSkipOpen] = useState(false);
@@ -23,41 +28,42 @@ export default function RoundClient({ init }: { init: ActiveRoundInit }) {
 
   if (summaryOpen || ar.round.status === "complete") {
     return (
-      <RoundSummary
-        round={ar.round}
-        holes={ar.playedHoles}
-        scores={ar.scores}
-        parForTee={ar.parForRoundTee}
-      />
+      <Box sx={{ minHeight: "100dvh", py: 3 }}>
+        <Box sx={{ maxWidth: 640, mx: "auto", px: 1 }}>
+          <RoundSummary
+            round={ar.round}
+            holes={ar.playedHoles}
+            scores={ar.scores}
+            parForTee={ar.parForRoundTee}
+          />
+        </Box>
+      </Box>
     );
   }
 
   const hole = ar.currentHole;
   if (!hole) {
-    return <Alert severity="info">No holes loaded for this round.</Alert>;
+    return (
+      <Box sx={{ px: 2, pt: 3 }}>
+        <Alert severity="info">No holes loaded for this round.</Alert>
+      </Box>
+    );
   }
 
-  const par = ar.parForRoundTee(hole);
-  const existingScore = ar.scoreForHole(hole.hole_number);
-  const holeIndex = ar.currentIndex + 1;
   const holesTotal = ar.playedHoles.length;
   const isFirstHole = ar.currentIndex === 0;
   const isLastHole = ar.currentIndex === holesTotal - 1;
+  const existingScore = ar.scoreForHole(hole.hole_number);
+  const par = ar.parForRoundTee(hole);
 
   function goNext() {
-    if (isLastHole) {
-      void finishRound();
-    } else {
-      ar.goToNext();
-    }
+    if (isLastHole) void finishRound();
+    else ar.goToNext();
   }
 
   function goPrev() {
-    if (isFirstHole) {
-      ar.jumpTo(ar.playedHoles[holesTotal - 1].hole_number);
-    } else {
-      ar.goToPrev();
-    }
+    if (isFirstHole) ar.jumpTo(ar.playedHoles[holesTotal - 1].hole_number);
+    else ar.goToPrev();
   }
 
   async function finishRound() {
@@ -70,13 +76,14 @@ export default function RoundClient({ init }: { init: ActiveRoundInit }) {
     }
   }
 
-  async function handleSavedAndNext(payload: Omit<HoleScore, "id" | "created_at">) {
+  async function handleSave(payload: HoleLoggerSnapshot, advance: boolean) {
     setError(null);
     try {
       await ar.upsertScore(payload);
-      goNext();
+      if (advance) goNext();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to save hole");
+      throw e;
     }
   }
 
@@ -84,8 +91,8 @@ export default function RoundClient({ init }: { init: ActiveRoundInit }) {
     try {
       await ar.upsertScore({
         round_id: ar.round.id,
-        hole_id: hole.id,
-        hole_number: hole.hole_number,
+        hole_id: hole!.id,
+        hole_number: hole!.hole_number,
         strokes: null,
         putts: null,
         fairway_direction: null,
@@ -108,8 +115,8 @@ export default function RoundClient({ init }: { init: ActiveRoundInit }) {
     try {
       await ar.upsertScore({
         round_id: ar.round.id,
-        hole_id: hole.id,
-        hole_number: hole.hole_number,
+        hole_id: hole!.id,
+        hole_number: hole!.hole_number,
         strokes: strokesTaken,
         putts: null,
         fairway_direction: null,
@@ -128,86 +135,41 @@ export default function RoundClient({ init }: { init: ActiveRoundInit }) {
     }
   }
 
-  return (
-    <Stack spacing={2.5}>
-      <Stack
-        direction="row"
-        sx={{ justifyContent: "space-between", alignItems: "center", px: 0.5 }}
-      >
-        <Button
-          component={Link}
-          href="/"
-          size="small"
-          sx={{
-            minHeight: 36,
-            px: 1.5,
-            color: "primary.main",
-            fontFamily: "var(--font-jakarta)",
-            fontWeight: 700,
-            letterSpacing: "0.08em",
-            textTransform: "uppercase",
-            fontSize: "0.72rem",
-          }}
-        >
-          ← Home
-        </Button>
-        <Box
-          sx={{
-            px: 1.75,
-            py: 0.75,
-            borderRadius: 999,
-            background: "linear-gradient(180deg, #0E4A38, #072418)",
-            color: "#FAF7F0",
-            fontFamily: "var(--font-mono)",
-            fontSize: "0.74rem",
-            fontWeight: 700,
-            letterSpacing: "0.1em",
-            textTransform: "uppercase",
-            boxShadow: "0 4px 14px -8px rgba(7,36,24,0.6)",
-          }}
-        >
-          Hole {holeIndex.toString().padStart(2, "0")} / {holesTotal}
-        </Box>
-      </Stack>
-
-      <HoleLogger
-        key={hole.id}
+  const content = (
+    <>
+      <HoleMapView
         hole={hole}
         par={par}
-        teeColour={ar.round.tee_colour}
-        existing={existingScore}
+        tee={ar.round.tee_colour as TeeColour}
         roundId={ar.round.id}
+        existing={existingScore}
+        currentIndex={ar.currentIndex}
+        totalHoles={holesTotal}
         isFirstHole={isFirstHole}
         isLastHole={isLastHole}
+        insights={insights}
         onPrev={goPrev}
+        onNext={goNext}
+        onShowCard={() => setSummaryOpen(true)}
         onSkip={() => setSkipOpen(true)}
         onPickUp={() => setPickUpOpen(true)}
-        onSavedAndNext={handleSavedAndNext}
+        onSave={handleSave}
       />
-
-      {error && <Alert severity="error">{error}</Alert>}
-
-      <Stack
-        direction="row"
-        spacing={2}
-        sx={{ justifyContent: "center", pt: 0.5 }}
-      >
-        <Typography
-          variant="caption"
-          onClick={() => setSummaryOpen(true)}
+      {error && (
+        <Box
           sx={{
-            cursor: "pointer",
-            color: "text.secondary",
-            fontWeight: 600,
-            letterSpacing: "0.08em",
-            textTransform: "uppercase",
-            "&:hover": { color: "primary.main" },
+            position: "fixed",
+            left: 16,
+            right: 16,
+            top: "calc(env(safe-area-inset-top) + 72px)",
+            zIndex: 1400,
           }}
         >
-          View scorecard
-        </Typography>
-      </Stack>
-
+          <Alert severity="error" onClose={() => setError(null)}>
+            {error}
+          </Alert>
+        </Box>
+      )}
       <SkipHoleDialog
         open={skipOpen}
         holeNumber={hole.hole_number}
@@ -221,6 +183,37 @@ export default function RoundClient({ init }: { init: ActiveRoundInit }) {
         onCancel={() => setPickUpOpen(false)}
         onConfirm={handlePickUp}
       />
-    </Stack>
+    </>
   );
+
+  if (!mapsApiKey) {
+    return (
+      <>
+        <Box
+          sx={{
+            position: "fixed",
+            inset: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            background: "linear-gradient(180deg, #1C1C1E 0%, #000000 100%)",
+            px: 3,
+            textAlign: "center",
+          }}
+        >
+          <Box sx={{ color: "rgba(255,255,255,0.85)", maxWidth: 320 }}>
+            <Box sx={{ fontSize: "1.125rem", fontWeight: 700, mb: 1 }}>
+              Maps not configured
+            </Box>
+            <Box sx={{ fontSize: "0.9375rem", opacity: 0.7 }}>
+              Set <code>NEXT_PUBLIC_GOOGLE_MAPS_API_KEY</code> in <code>.env.local</code> and
+              restart the dev server.
+            </Box>
+          </Box>
+        </Box>
+      </>
+    );
+  }
+
+  return <APIProvider apiKey={mapsApiKey}>{content}</APIProvider>;
 }

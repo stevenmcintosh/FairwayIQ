@@ -9,7 +9,7 @@ import Button from "@mui/material/Button";
 import Box from "@mui/material/Box";
 import Divider from "@mui/material/Divider";
 import type { Hole, HoleScore, Round } from "@/types";
-import { scoreToken, SCORE_COLORS } from "@/lib/scoreColor";
+import { scoreToken } from "@/lib/scoreColor";
 
 type Props = {
   round: Round;
@@ -18,288 +18,54 @@ type Props = {
   parForTee: (hole: Hole) => number;
 };
 
-function HoleTile({
-  hole,
-  par,
-  score,
-}: {
-  hole: Hole;
-  par: number;
-  score: HoleScore | undefined;
-}) {
-  const strokes = score?.strokes ?? null;
-  const token = score?.hole_status === "skipped" ? "none" : scoreToken(strokes, par);
-  const style = SCORE_COLORS[token];
-  const isPicked = score?.hole_status === "picked_up";
+function formatDate(iso: string) {
+  try {
+    const d = new Date(iso);
+    return d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
+  } catch {
+    return iso;
+  }
+}
 
+function scoreColor(strokes: number | null, par: number) {
+  const t = scoreToken(strokes, par);
+  if (t === "eagle") return "#AF52DE";
+  if (t === "birdie") return "#FF3B30";
+  if (t === "bogey") return "#FF9500";
+  if (t === "double") return "#8E8E93";
+  return "#000";
+}
+
+function StatTile({
+  label,
+  value,
+  color,
+}: {
+  label: string;
+  value: string;
+  color?: string;
+}) {
   return (
     <Box
       sx={{
-        position: "relative",
-        aspectRatio: "1 / 1",
-        borderRadius: 2,
-        border: "1px solid",
-        borderColor: token === "none" ? "rgba(14,26,20,0.14)" : style.border,
-        backgroundColor: style.bg,
-        color: style.fg,
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "space-between",
-        p: 1,
-        overflow: "hidden",
-        transition: "transform 0.15s ease",
+        flex: 1,
+        backgroundColor: "#FFFFFF",
+        borderRadius: 3.5,
+        py: 2,
+        px: 1.5,
+        textAlign: "center",
       }}
     >
       <Typography
         component="span"
         sx={{
-          fontFamily: "var(--font-jakarta)",
-          fontSize: "0.55rem",
-          fontWeight: 700,
-          letterSpacing: "0.12em",
-          textTransform: "uppercase",
-          opacity: 0.75,
-          lineHeight: 1,
-        }}
-      >
-        {hole.hole_number.toString().padStart(2, "0")}
-      </Typography>
-      <Typography
-        component="span"
-        sx={{
-          fontFamily: "var(--font-mono)",
-          fontSize: "1.5rem",
-          fontWeight: 700,
-          textAlign: "right",
-          alignSelf: "flex-end",
-          lineHeight: 1,
-          fontFeatureSettings: "'tnum'",
-        }}
-      >
-        {strokes ?? "—"}
-        {isPicked && (
-          <Box component="span" sx={{ fontSize: "0.7rem", ml: 0.25, opacity: 0.8 }}>
-            *
-          </Box>
-        )}
-      </Typography>
-      <Typography
-        component="span"
-        sx={{
-          fontFamily: "var(--font-jakarta)",
-          fontSize: "0.52rem",
+          display: "block",
+          fontSize: "0.6875rem",
           fontWeight: 600,
-          letterSpacing: "0.08em",
-          opacity: 0.65,
-          lineHeight: 1,
-        }}
-      >
-        par {par}
-      </Typography>
-    </Box>
-  );
-}
-
-function NineRow({
-  label,
-  holes,
-  scores,
-  parForTee,
-}: {
-  label: string;
-  holes: Hole[];
-  scores: HoleScore[];
-  parForTee: (h: Hole) => number;
-}) {
-  const totalPar = holes.reduce((s, h) => s + parForTee(h), 0);
-  const totalStrokes = holes.reduce((sum, h) => {
-    const sc = scores.find((x) => x.hole_number === h.hole_number);
-    return sum + (sc?.strokes ?? 0);
-  }, 0);
-
-  return (
-    <Stack spacing={1.25}>
-      <Stack
-        direction="row"
-        sx={{ justifyContent: "space-between", alignItems: "baseline", px: 0.5 }}
-      >
-        <Typography
-          component="span"
-          sx={{
-            fontFamily: "var(--font-jakarta)",
-            fontSize: "0.65rem",
-            fontWeight: 700,
-            letterSpacing: "0.16em",
-            textTransform: "uppercase",
-            color: "secondary.dark",
-          }}
-        >
-          {label}
-        </Typography>
-        <Typography
-          component="span"
-          sx={{
-            fontFamily: "var(--font-mono)",
-            fontSize: "0.9rem",
-            fontWeight: 700,
-            color: "text.secondary",
-            fontFeatureSettings: "'tnum'",
-          }}
-        >
-          {totalStrokes || "—"} / {totalPar}
-        </Typography>
-      </Stack>
-      <Box
-        sx={{
-          display: "grid",
-          gridTemplateColumns: `repeat(${holes.length}, 1fr)`,
-          gap: 0.75,
-        }}
-      >
-        {holes.map((h) => (
-          <HoleTile
-            key={h.id}
-            hole={h}
-            par={parForTee(h)}
-            score={scores.find((s) => s.hole_number === h.hole_number)}
-          />
-        ))}
-      </Box>
-    </Stack>
-  );
-}
-
-export default function RoundSummary({ round, holes, scores, parForTee }: Props) {
-  const totalPar = holes.reduce((sum, h) => sum + parForTee(h), 0);
-  const totalStrokes = scores.reduce((sum, s) => sum + (s.strokes ?? 0), 0);
-  const vsPar = totalStrokes - totalPar;
-
-  const front = holes.filter((h) => h.hole_number <= 9);
-  const back = holes.filter((h) => h.hole_number >= 10);
-
-  const vsColor =
-    vsPar > 0 ? "error.main" : vsPar < 0 ? "success.main" : "text.primary";
-
-  return (
-    <Stack spacing={3}>
-      {/* Hero totals */}
-      <Card>
-        <CardContent sx={{ p: { xs: 3, sm: 4 } }}>
-          <Stack spacing={2.5}>
-            <Stack
-              direction="row"
-              sx={{ justifyContent: "space-between", alignItems: "baseline" }}
-            >
-              <Box>
-                <Typography
-                  component="span"
-                  sx={{
-                    fontFamily: "var(--font-mono)",
-                    fontSize: "0.68rem",
-                    fontWeight: 700,
-                    letterSpacing: "0.18em",
-                    textTransform: "uppercase",
-                    color: "secondary.dark",
-                    display: "block",
-                  }}
-                >
-                  Round · {round.played_at}
-                </Typography>
-                <Typography
-                  variant="h3"
-                  component="h1"
-                  sx={{
-                    fontWeight: 800,
-                    lineHeight: 1,
-                    fontSize: { xs: "2.3rem", sm: "2.8rem" },
-                    mt: 0.5,
-                  }}
-                >
-                  Scorecard
-                </Typography>
-              </Box>
-              <Box
-                sx={{
-                  px: 1.5,
-                  py: 0.5,
-                  borderRadius: 999,
-                  border: "1px solid",
-                  borderColor: "rgba(14,26,20,0.14)",
-                  fontFamily: "var(--font-jakarta)",
-                  fontSize: "0.62rem",
-                  fontWeight: 700,
-                  letterSpacing: "0.12em",
-                  textTransform: "uppercase",
-                  color: "text.secondary",
-                }}
-              >
-                {round.tee_colour} · {round.hole_count}
-              </Box>
-            </Stack>
-
-            <Divider />
-
-            <Stack direction="row" sx={{ justifyContent: "space-around", alignItems: "baseline" }}>
-              <TotalStat label="Strokes" value={totalStrokes.toString()} />
-              <Divider orientation="vertical" flexItem sx={{ mx: 1 }} />
-              <TotalStat label="Par" value={totalPar.toString()} />
-              <Divider orientation="vertical" flexItem sx={{ mx: 1 }} />
-              <TotalStat
-                label="vs Par"
-                value={vsPar === 0 ? "E" : vsPar > 0 ? `+${vsPar}` : vsPar.toString()}
-                color={vsColor}
-              />
-            </Stack>
-          </Stack>
-        </CardContent>
-      </Card>
-
-      {/* Scorecard grid */}
-      <Card>
-        <CardContent sx={{ p: { xs: 2.5, sm: 3 } }}>
-          <Stack spacing={2.5}>
-            {front.length > 0 && (
-              <NineRow label="Front 9" holes={front} scores={scores} parForTee={parForTee} />
-            )}
-            {back.length > 0 && (
-              <NineRow label={front.length > 0 ? "Back 9" : "Back 9"} holes={back} scores={scores} parForTee={parForTee} />
-            )}
-          </Stack>
-        </CardContent>
-      </Card>
-
-      {/* Actions */}
-      <Stack direction="row" spacing={1.5}>
-        <Button
-          fullWidth
-          variant="outlined"
-          component={Link}
-          href="/rounds"
-          sx={{ color: "text.primary", borderColor: "rgba(14,26,20,0.18)" }}
-        >
-          History
-        </Button>
-        <Button fullWidth variant="contained" component={Link} href="/setup" sx={{ color: "#FAF7F0" }}>
-          New Round
-        </Button>
-      </Stack>
-    </Stack>
-  );
-}
-
-function TotalStat({ label, value, color }: { label: string; value: string; color?: string }) {
-  return (
-    <Stack sx={{ alignItems: "center", flex: 1 }}>
-      <Typography
-        component="span"
-        sx={{
-          fontFamily: "var(--font-jakarta)",
-          fontSize: "0.58rem",
-          fontWeight: 700,
-          letterSpacing: "0.16em",
+          letterSpacing: "0.02em",
           textTransform: "uppercase",
-          color: "text.secondary",
-          mb: 0.5,
+          color: "rgba(60,60,67,0.60)",
+          mb: 0.75,
         }}
       >
         {label}
@@ -307,17 +73,326 @@ function TotalStat({ label, value, color }: { label: string; value: string; colo
       <Typography
         component="span"
         sx={{
-          fontFamily: "var(--font-fraunces)",
-          fontSize: { xs: "2.4rem", sm: "2.9rem" },
-          fontWeight: 800,
+          display: "block",
+          fontSize: "2rem",
+          fontWeight: 700,
+          letterSpacing: "-0.025em",
           lineHeight: 1,
-          letterSpacing: "-0.02em",
-          color: color ?? "text.primary",
-          fontFeatureSettings: "'tnum'",
+          color: color ?? "#000",
+          fontVariantNumeric: "tabular-nums",
         }}
       >
         {value}
       </Typography>
+    </Box>
+  );
+}
+
+function HoleRow({
+  hole,
+  par,
+  score,
+  isLast,
+}: {
+  hole: Hole;
+  par: number;
+  score: HoleScore | undefined;
+  isLast: boolean;
+}) {
+  const strokes = score?.strokes ?? null;
+  const isSkipped = score?.hole_status === "skipped";
+  const isPicked = score?.hole_status === "picked_up";
+  const display = isSkipped ? "—" : strokes?.toString() ?? "—";
+  const color = strokes == null ? "rgba(60,60,67,0.40)" : scoreColor(strokes, par);
+  const vs = strokes != null ? strokes - par : null;
+  const vsLabel =
+    vs == null ? "" : vs === 0 ? "E" : vs > 0 ? `+${vs}` : vs.toString();
+
+  return (
+    <Box>
+      <Stack
+        direction="row"
+        sx={{
+          alignItems: "center",
+          px: 2,
+          py: 1.25,
+          gap: 2,
+        }}
+      >
+        <Typography
+          component="span"
+          sx={{
+            width: 28,
+            fontSize: "1.0625rem",
+            fontWeight: 600,
+            color: "rgba(60,60,67,0.60)",
+            fontVariantNumeric: "tabular-nums",
+          }}
+        >
+          {hole.hole_number}
+        </Typography>
+        <Typography
+          component="span"
+          sx={{
+            flex: 1,
+            fontSize: "1.0625rem",
+            fontWeight: 400,
+            color: "#000",
+          }}
+        >
+          {hole.name ?? `Hole ${hole.hole_number}`}
+        </Typography>
+        <Typography
+          component="span"
+          sx={{
+            fontSize: "0.9375rem",
+            fontWeight: 400,
+            color: "rgba(60,60,67,0.60)",
+            fontVariantNumeric: "tabular-nums",
+            minWidth: 40,
+            textAlign: "right",
+          }}
+        >
+          Par {par}
+        </Typography>
+        <Box sx={{ minWidth: 56, textAlign: "right" }}>
+          <Typography
+            component="span"
+            sx={{
+              fontSize: "1.25rem",
+              fontWeight: 700,
+              color,
+              fontVariantNumeric: "tabular-nums",
+              letterSpacing: "-0.01em",
+            }}
+          >
+            {display}
+            {isPicked && (
+              <Box component="span" sx={{ fontSize: "0.75rem", ml: 0.25, opacity: 0.7 }}>
+                *
+              </Box>
+            )}
+          </Typography>
+          {vsLabel && (
+            <Typography
+              component="span"
+              sx={{
+                display: "block",
+                fontSize: "0.6875rem",
+                fontWeight: 600,
+                color,
+                opacity: 0.85,
+                mt: -0.25,
+                fontVariantNumeric: "tabular-nums",
+              }}
+            >
+              {vsLabel}
+            </Typography>
+          )}
+        </Box>
+      </Stack>
+      {!isLast && <Divider sx={{ ml: 6 }} />}
+    </Box>
+  );
+}
+
+function SectionHeader({ label }: { label: string }) {
+  return (
+    <Typography
+      component="span"
+      sx={{
+        display: "block",
+        px: 2,
+        pt: 3,
+        pb: 1,
+        fontSize: "0.8125rem",
+        fontWeight: 400,
+        letterSpacing: 0,
+        color: "rgba(60,60,67,0.60)",
+        textTransform: "uppercase",
+      }}
+    >
+      {label}
+    </Typography>
+  );
+}
+
+function HoleGroup({
+  holes,
+  scores,
+  parForTee,
+}: {
+  holes: Hole[];
+  scores: HoleScore[];
+  parForTee: (h: Hole) => number;
+}) {
+  return (
+    <Card>
+      <Box>
+        {holes.map((h, i) => (
+          <HoleRow
+            key={h.id}
+            hole={h}
+            par={parForTee(h)}
+            score={scores.find((s) => s.hole_number === h.hole_number)}
+            isLast={i === holes.length - 1}
+          />
+        ))}
+      </Box>
+    </Card>
+  );
+}
+
+export default function RoundSummary({ round, holes, scores, parForTee }: Props) {
+  const totalPar = holes.reduce((sum, h) => sum + parForTee(h), 0);
+  const totalStrokes = scores.reduce((sum, s) => sum + (s.strokes ?? 0), 0);
+  const vsPar = totalStrokes - totalPar;
+  const vsColor = vsPar > 0 ? "#FF3B30" : vsPar < 0 ? "#34C759" : "#000";
+
+  const front = holes.filter((h) => h.hole_number <= 9);
+  const back = holes.filter((h) => h.hole_number >= 10);
+
+  const frontPar = front.reduce((s, h) => s + parForTee(h), 0);
+  const frontStrokes = front.reduce((sum, h) => {
+    const sc = scores.find((x) => x.hole_number === h.hole_number);
+    return sum + (sc?.strokes ?? 0);
+  }, 0);
+  const backPar = back.reduce((s, h) => s + parForTee(h), 0);
+  const backStrokes = back.reduce((sum, h) => {
+    const sc = scores.find((x) => x.hole_number === h.hole_number);
+    return sum + (sc?.strokes ?? 0);
+  }, 0);
+
+  return (
+    <Stack spacing={0} sx={{ pb: 3 }}>
+      {/* Large title */}
+      <Box sx={{ px: 2, pt: 2, pb: 2.5 }}>
+        <Typography
+          component="span"
+          sx={{
+            display: "block",
+            fontSize: "0.8125rem",
+            fontWeight: 500,
+            color: "rgba(60,60,67,0.60)",
+            mb: 0.5,
+          }}
+        >
+          {formatDate(round.played_at)} · {round.tee_colour} tees · {round.hole_count} holes
+        </Typography>
+        <Typography
+          component="h1"
+          sx={{
+            fontSize: "2.125rem",
+            fontWeight: 700,
+            letterSpacing: "-0.022em",
+            lineHeight: 1.12,
+            color: "#000",
+          }}
+        >
+          Scorecard
+        </Typography>
+      </Box>
+
+      {/* Stat tiles */}
+      <Stack direction="row" spacing={1} sx={{ px: 2, mb: 1 }}>
+        <StatTile label="Strokes" value={totalStrokes.toString()} />
+        <StatTile label="Par" value={totalPar.toString()} />
+        <StatTile
+          label="vs Par"
+          value={vsPar === 0 ? "E" : vsPar > 0 ? `+${vsPar}` : vsPar.toString()}
+          color={vsColor}
+        />
+      </Stack>
+
+      {/* Front 9 */}
+      {front.length > 0 && (
+        <>
+          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", px: 2, pt: 3, pb: 1 }}>
+            <Typography
+              component="span"
+              sx={{
+                fontSize: "0.8125rem",
+                fontWeight: 400,
+                color: "rgba(60,60,67,0.60)",
+                textTransform: "uppercase",
+              }}
+            >
+              Front 9
+            </Typography>
+            <Typography
+              component="span"
+              sx={{
+                fontSize: "0.8125rem",
+                fontWeight: 600,
+                color: "rgba(60,60,67,0.60)",
+                fontVariantNumeric: "tabular-nums",
+              }}
+            >
+              {frontStrokes || "—"} / {frontPar}
+            </Typography>
+          </Box>
+          <Box sx={{ px: 2 }}>
+            <HoleGroup holes={front} scores={scores} parForTee={parForTee} />
+          </Box>
+        </>
+      )}
+
+      {/* Back 9 */}
+      {back.length > 0 && (
+        <>
+          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", px: 2, pt: 3, pb: 1 }}>
+            <Typography
+              component="span"
+              sx={{
+                fontSize: "0.8125rem",
+                fontWeight: 400,
+                color: "rgba(60,60,67,0.60)",
+                textTransform: "uppercase",
+              }}
+            >
+              Back 9
+            </Typography>
+            <Typography
+              component="span"
+              sx={{
+                fontSize: "0.8125rem",
+                fontWeight: 600,
+                color: "rgba(60,60,67,0.60)",
+                fontVariantNumeric: "tabular-nums",
+              }}
+            >
+              {backStrokes || "—"} / {backPar}
+            </Typography>
+          </Box>
+          <Box sx={{ px: 2 }}>
+            <HoleGroup holes={back} scores={scores} parForTee={parForTee} />
+          </Box>
+        </>
+      )}
+
+      {/* Actions */}
+      <Box sx={{ px: 2, pt: 4 }}>
+        <Stack direction="row" spacing={1.5}>
+          <Button
+            fullWidth
+            variant="outlined"
+            component={Link}
+            href="/rounds"
+            size="large"
+          >
+            History
+          </Button>
+          <Button
+            fullWidth
+            variant="contained"
+            component={Link}
+            href="/setup"
+            size="large"
+          >
+            New Round
+          </Button>
+        </Stack>
+      </Box>
     </Stack>
   );
 }

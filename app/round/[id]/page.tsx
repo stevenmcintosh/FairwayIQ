@@ -1,9 +1,8 @@
 import { redirect, notFound } from "next/navigation";
-import Box from "@mui/material/Box";
-import Container from "@mui/material/Container";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import RoundClient from "./RoundClient";
-import type { Hole, HoleScore, Round } from "@/types";
+import { buildHoleInsights } from "@/lib/holeInsights";
+import type { Hole, HoleScore, Round, TeeColour } from "@/types";
 
 export default async function RoundPage({
   params,
@@ -23,7 +22,7 @@ export default async function RoundPage({
 
   if (error || !round) notFound();
 
-  const [holesRes, scoresRes] = await Promise.all([
+  const [holesRes, scoresRes, priorScoresRes] = await Promise.all([
     supabase
       .from("holes")
       .select("*")
@@ -34,19 +33,32 @@ export default async function RoundPage({
       .select("*")
       .eq("round_id", id)
       .order("hole_number", { ascending: true }),
+    supabase
+      .from("hole_scores")
+      .select("hole_id, strokes, hole_status, round_id, rounds!inner(user_id, course_version_id)")
+      .neq("round_id", id)
+      .eq("rounds.user_id", userData.user.id)
+      .eq("rounds.course_version_id", round.course_version_id),
   ]);
 
+  const holes = (holesRes.data ?? []) as Hole[];
+  const insights = buildHoleInsights(
+    holes,
+    (priorScoresRes.data ?? []) as Pick<HoleScore, "hole_id" | "strokes" | "hole_status">[],
+    round.tee_colour as TeeColour,
+  );
+
+  const mapsApiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? null;
+
   return (
-    <Box sx={{ minHeight: "100dvh", py: 3 }}>
-      <Container maxWidth="sm">
-        <RoundClient
-          init={{
-            round: round as Round,
-            holes: (holesRes.data ?? []) as Hole[],
-            scores: (scoresRes.data ?? []) as HoleScore[],
-          }}
-        />
-      </Container>
-    </Box>
+    <RoundClient
+      init={{
+        round: round as Round,
+        holes,
+        scores: (scoresRes.data ?? []) as HoleScore[],
+      }}
+      insights={insights}
+      mapsApiKey={mapsApiKey}
+    />
   );
 }
