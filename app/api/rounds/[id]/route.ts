@@ -2,6 +2,26 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
+export async function DELETE(
+  _request: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const { id } = await params;
+  const supabase = await createSupabaseServerClient();
+  const { data: user } = await supabase.auth.getUser();
+  if (!user.user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+
+  await supabase.from("hole_scores").delete().eq("round_id", id);
+  const { error } = await supabase
+    .from("rounds")
+    .delete()
+    .eq("id", id)
+    .eq("user_id", user.user.id);
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json({ ok: true });
+}
+
 const UpdateRoundSchema = z.object({
   status: z.enum(["active", "complete", "partial"]).optional(),
   total_strokes: z.number().int().nullable().optional(),
