@@ -6,6 +6,7 @@ import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
 import Card from "@mui/material/Card";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import HomeActiveRound from "./HomeActiveRound";
 
 export default async function HomePage() {
   const supabase = await createSupabaseServerClient();
@@ -66,7 +67,7 @@ export default async function HomePage() {
                 mb: 0.5,
               }}
             >
-              {activeRound ? "In progress" : "Ready to play"}
+              Ready to play
             </Typography>
             <Typography
               component="span"
@@ -79,19 +80,22 @@ export default async function HomePage() {
                 mb: 2,
               }}
             >
-              {activeRound ? "Resume your round" : "Start a new round"}
+              Start a new round
             </Typography>
-            <Link
-              href={activeRound ? `/round/${activeRound.id}` : "/setup"}
-              style={{ textDecoration: "none" }}
-            >
+            <Link href="/setup" style={{ textDecoration: "none" }}>
               <Button fullWidth variant="contained" size="large">
-                {activeRound ? "Resume Round" : "Start a Round"}
+                Start a Round
               </Button>
             </Link>
           </Box>
         </Card>
       </Box>
+
+      {activeRound && (
+        <Box sx={{ px: 2, pt: 2 }}>
+          <HomeActiveRound roundId={activeRound.id} />
+        </Box>
+      )}
 
       <Box sx={{ px: 2, pt: 2 }}>
         <Link href="/rounds" style={{ textDecoration: "none" }}>
